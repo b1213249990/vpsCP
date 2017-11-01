@@ -1,11 +1,11 @@
 #!/bin/bash
-# run: source <(curl -s https://raw.githubusercontent.com/Rahulsharma0810/Centos-Openvz-Deploy-web/master/oz-install.sh | sh)
+# run: source <(curl -s https://raw.githubusercontent.com/b1213249990/vpsCP/master/install_node.sh | sh)
 
 clear
 echo 'Going to install OpenVZ for you..'
 
 echo 'installing wget..'
-yum install -y wget
+yum install -y wget git unzip
 
 echo 'now adding openvz Repo'
 wget -P /etc/yum.repos.d/ http://ftp.openvz.org/openvz.repo
@@ -46,3 +46,24 @@ clear
 echo "OpenVZ Is now Installed.."
 /etc/init.d/iptables stop && chkconfig iptables off
 echo "iptables Stop On Boot"
+echo "-> Installing packages"
+yum install -y git expr bc &> /dev/null 
+echo "-> Downloading natCP files..."
+cd /tmp && git clone https://github.com/b1213249990/vpsCP
+mv /tmp/vpsCP/slave /tmp/slave && rm -rf /tmp/vpsCP
+chmod 700 /tmp/slave/*
+mv /tmp/slave/* /sbin
+echo "-> Installation complete. Please wait while final configuration changes are made."
+newPassword=$(openssl rand -base64 32)
+useradd remote
+mkdir -p /srv/consoleusers/
+mkdir -p /srv/containers
+groupadd consoleusers
+echo '%consoleusers ALL=NOPASSWD:/sbin/vzenter' >> /etc/sudoers
+sed -i 's/VE_LAYOUT=ploop/VE_LAYOUT=simfs/g' /etc/vz/vz.conf
+chmod 755 /sbin/vzenter
+echo -e "$newPassword\n$newPassword" | passwd remote
+echo 'remote ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+echo "-> Slave node configured. Here are the slave details:"
+echo "-> Access key: $newPassword"
+echo "-> Note: A reboot is required. Failiure to do so will prevent the proper installation of the OpenVZ kernel."
